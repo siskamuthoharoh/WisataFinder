@@ -1,0 +1,22 @@
+WISATAFINDER - LAPORAN VALIDASI DATASET
+==================================================
+Jumlah baris: 437
+Jumlah kolom: 13
+Baris duplikat: 0
+Kolom kosong:
+Place_Id          0
+Place_Name        0
+Description       0
+Category          0
+City              0
+Price             0
+Rating            0
+Time_Minutes    232
+Coordinate        0
+Lat               0
+Long              0
+Unnamed: 11     437
+Unnamed: 12       0
+
+Kolom dataset:
+['Place_Id', 'Place_Name', 'Description', 'Category', 'City', 'Price', 'Rating', 'Time_Minutes', 'Coordinate', 'Lat', 'Long', 'Unnamed: 11', 'Unnamed: 12']
