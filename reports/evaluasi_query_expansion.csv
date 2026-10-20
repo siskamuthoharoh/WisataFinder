@@ -1,0 +1,5 @@
+﻿query,Precision@5_baseline,Precision@5_expansion,selisih
+budaya di Bandung,1.0,1.0,0.0
+tempat rekreasi keluarga di Bandung,0.8,0.8,0.0
+wisata alam di Semarang,1.0,1.0,0.0
+taman bermain di Bandung,0.8,1.0,0.2
