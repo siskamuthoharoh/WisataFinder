@@ -65,9 +65,37 @@ def preprocess_data():
     for col in text_columns:
         df = df[df[col].ne("")]
 
-    # Menghapus ID duplikat jika ada
+        # Menghapus ID duplikat jika ada
     df = df.drop_duplicates(subset=["Place_Id"])
 
+    # Label lokasi yang diperjelas berdasarkan deskripsi dataset.
+    location_overrides = {
+        "Air Terjun Kali Pancur": "Kabupaten Semarang",
+        "Kampoeng Rawa": "Kabupaten Semarang",
+        "Hutan Pinus Kayon": "Kabupaten Semarang",
+    }
+
+    df["Location_Label"] = df["City"]
+
+    for place_name, location_label in location_overrides.items():
+        mask = df["Place_Name"].eq(place_name)
+        df.loc[mask, "Location_Label"] = location_label
+
+    # Status pemeriksaan lokasi.
+    df["Location_Verification"] = "Belum diverifikasi"
+
+    df.loc[
+        df["Place_Name"].isin(location_overrides),
+        "Location_Verification"
+    ] = "Lokasi diperjelas dari deskripsi"
+
+        # Benteng Pendem: metadata lokasi belum konsisten.
+    benteng_pendem_mask = df["Place_Name"].eq("Benteng Pendem")
+
+    df.loc[
+        benteng_pendem_mask,
+        "Location_Verification"
+    ] = "Perlu verifikasi: metadata lokasi bertentangan"
     # Membentuk teks gabungan untuk mesin pencari
     df["search_text"] = (
         df["Place_Name"] + " "
