@@ -14,3 +14,9 @@ htmlcov/
 .DS_Store
 Thumbs.db
 *.log
+# Local backup files
+*.bak
+*.bak.*
+
+# Local backup folders
+backups/

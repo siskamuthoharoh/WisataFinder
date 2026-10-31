@@ -6,6 +6,34 @@ WisataFinder adalah aplikasi pencarian destinasi wisata di Indonesia yang dikemb
 
 Sistem menerapkan metode **TF-IDF (Term Frequency–Inverse Document Frequency)** untuk merepresentasikan teks destinasi dan **Cosine Similarity** untuk menghitung tingkat kemiripan antara query pengguna dan informasi destinasi. Hasil pencarian kemudian ditampilkan berdasarkan skor kemiripan, dengan penyesuaian tertentu seperti pengurutan harga untuk query yang secara eksplisit meminta wisata murah.
 
+
+## Pengembangan Dataset Nasional
+
+WisataFinder telah dikembangkan lebih lanjut menggunakan dataset nasional yang berisi 1.025 destinasi wisata dari 37 provinsi.
+
+Dataset nasional yang telah diproses disimpan pada `data/processed/destinations_nasional.csv`. Dataset awal sebanyak 437 destinasi tetap dipertahankan sebagai bagian dari riwayat pengembangan dan pembanding. Kedua dataset tidak digabungkan.
+
+### Pengembangan Algoritma
+
+Eksperimen algoritma dilakukan melalui versi V2 sampai V7 untuk meningkatkan pencarian berdasarkan kategori, nama destinasi, kota, dan provinsi.
+
+Evaluasi V7 pada delapan query menghasilkan rata-rata Precision@10 sebesar 70%. Sebanyak 56 dari 56 hasil yang ditemukan dinilai relevan pada sampel pengujian manual.
+
+Pengujian penyaringan metadata juga dilakukan terhadap 37 provinsi, dengan 289 dari 289 hasil sesuai metadata provinsi yang diminta. Hasil ini bukan klaim akurasi geografis menyeluruh.
+
+### Dokumentasi Penelitian
+
+Penjelasan lengkap mengenai dataset, metodologi, evaluasi, dan perkembangan proyek tersedia pada:
+
+- [Dokumentasi Dataset](docs/DATASET.md)
+- [Metodologi Algoritma](docs/METODOLOGI.md)
+- [Hasil Evaluasi](docs/EVALUASI.md)
+- [Riwayat Pengembangan](docs/PENGEMBANGAN.md)
+
+**Status pengembangan:** Aplikasi nasional sedang melalui validasi fungsional dan integrasi algoritma V7. WisataBot masih menjadi rencana pengembangan berikutnya.
+
+---
+
 ---
 
 ## Daftar Isi
@@ -183,109 +211,98 @@ Diagram ini menggambarkan hubungan utama antara data, query, pemeringkatan, dan 
 
 ## 7. Struktur Repositori
 
+Struktur utama proyek WisataFinder:
+
 ```text
 WisataFinder/
 ├── app.py
-├── requirements.txt
+├── app_nasional_v7.py
 ├── README.md
+├── requirements.txt
 ├── .gitignore
 ├── .streamlit/
 ├── data/
 │   ├── raw/
-│   │   └── tourism_with_id.csv
 │   └── processed/
-│       └── destinations_clean.csv
-├── docs/
+├── src/
+│   ├── inspect_columns.py
+│   ├── preprocess_data.py
+│   └── validate_data.py
 ├── notebooks/
 ├── reports/
+│   ├── evaluasi_query_expansion.csv
+│   ├── validasi_dataset.txt
 │   └── figures/
-├── src/
-│   └── preprocess_data.py
-└── tests/
+└── docs/
+    ├── DATASET.md
+    ├── METODOLOGI.md
+    ├── EVALUASI.md
+    └── PENGEMBANGAN.md
 ```
 
-Fungsi direktori dan berkas utama:
+Keterangan:
 
-| Berkas atau direktori | Fungsi |
+| Bagian | Fungsi |
 |---|---|
-| `app.py` | Implementasi antarmuka dan logika pencarian aplikasi. |
-| `requirements.txt` | Daftar dependensi Python yang diperlukan. |
-| `README.md` | Dokumentasi utama proyek. |
-| `.gitignore` | Mengatur berkas lokal yang tidak perlu dimasukkan ke Git. |
-| `.streamlit/` | Konfigurasi Streamlit apabila digunakan. |
-| `data/raw/` | Menyimpan dataset sumber. |
-| `data/processed/` | Menyimpan dataset hasil pengolahan. |
-| `src/` | Kode pendukung, termasuk preprocessing. |
-| `docs/` | Dokumentasi tambahan, misalnya sumber dan keterangan dataset. |
-| `notebooks/` | Notebook eksplorasi atau eksperimen jika diperlukan. |
-| `reports/figures/` | Gambar atau visualisasi pendukung jika tersedia. |
-| `tests/` | Pengujian otomatis jika sudah diimplementasikan. |
+| app.py | Aplikasi pencarian versi awal |
+| app_nasional_v7.py | Aplikasi pengembangan dataset nasional |
+| data/raw/ | Dataset sumber |
+| data/processed/ | Dataset hasil pengolahan dan evaluasi |
+| src/ | Script pemeriksaan dan preprocessing |
+| notebooks/ | Eksperimen dan analisis algoritma |
+| reports/ | Laporan dan hasil pengujian |
+| docs/ | Dokumentasi penelitian |
 
-Struktur di atas menunjukkan susunan yang dituju. Isi aktual setiap direktori perlu diperiksa sebelum dianggap lengkap.
+Folder tests/ saat ini belum memiliki file pengujian otomatis.
 
 ## 8. Instalasi dan Menjalankan Aplikasi
 
 ### Persyaratan
 
-- Windows dengan Anaconda atau Miniconda.
-- Git jika ingin mengambil repositori menggunakan Git.
-- Python dengan versi yang kompatibel dengan dependensi proyek.
-- Dataset yang diperlukan tersedia pada lokasi berkas yang diharapkan aplikasi.
+- Python 3.10.
+- Anaconda atau Miniconda.
+- Git.
+- Dependensi dalam requirements.txt.
+- Dataset yang diperlukan aplikasi.
 
-### 8.1. Mengambil repositori
-
-Jika repositori belum tersedia di komputer:
+### 8.1. Clone repository
 
 ```bash
 git clone https://github.com/siskamuthoharoh/WisataFinder.git
 cd WisataFinder
 ```
 
-Jika repositori sudah tersedia secara lokal, masuk ke folder proyek yang ada.
-
-### 8.2. Mengaktifkan environment
-
-Untuk environment yang digunakan selama pengembangan:
+### 8.2. Membuat environment
 
 ```bash
-conda activate ds_siska
+conda create -n wisatafinder python=3.10 -y
+conda activate wisatafinder
 ```
 
-Jika environment tersebut belum tersedia di komputer lain, buat environment baru dengan versi Python yang kompatibel dengan dependensi proyek.
-
 ### 8.3. Menginstal dependensi
-
-Dari direktori utama proyek, jalankan:
 
 ```bash
 python -m pip install -r requirements.txt
 ```
 
-### 8.4. Menyiapkan dataset
-
-Pastikan dataset mentah tersedia di `data/raw/tourism_with_id.csv`.
-
-Untuk menjalankan preprocessing kembali:
-
-```bash
-python -m src.preprocess_data
-```
-
-Perintah tersebut menghasilkan dataset olahan pada `data/processed/destinations_clean.csv` sesuai implementasi preprocessing.
-
-Jika dataset olahan yang dibutuhkan sudah tersedia dan sesuai, periksa terlebih dahulu apakah preprocessing ulang memang diperlukan.
-
-### 8.5. Menjalankan aplikasi
-
-Jalankan:
+### 8.4. Menjalankan aplikasi awal
 
 ```bash
 streamlit run app.py
 ```
 
-Terminal akan menampilkan alamat lokal Streamlit. Buka alamat tersebut melalui browser untuk menggunakan aplikasi.
+Aplikasi awal menggunakan destinations_clean.csv.
 
-Jika terjadi kesalahan, periksa pesan pada terminal, keberadaan dataset, environment aktif, dan dependensi yang terpasang.
+### 8.5. Menjalankan aplikasi nasional
+
+```bash
+streamlit run app_nasional_v7.py
+```
+
+Aplikasi nasional menggunakan destinations_nasional.csv.
+
+**Catatan:** Aplikasi nasional masih dalam tahap validasi.
+Pastikan dataset dan dependensi tersedia sebelum menjalankan aplikasi.
 
 ## 9. Contoh Penggunaan
 
