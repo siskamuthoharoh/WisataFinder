@@ -7,35 +7,64 @@ WisataFinder adalah aplikasi pencarian destinasi wisata di Indonesia yang dikemb
 Sistem menerapkan metode **TF-IDF (Term Frequency–Inverse Document Frequency)** untuk merepresentasikan teks destinasi dan **Cosine Similarity** untuk menghitung tingkat kemiripan antara query pengguna dan informasi destinasi. Hasil pencarian kemudian ditampilkan berdasarkan skor kemiripan, dengan penyesuaian tertentu seperti pengurutan harga untuk query yang secara eksplisit meminta wisata murah.
 
 
-## Pengembangan Dataset Nasional
+## Pengembangan Dataset dan Versi Aplikasi
 
-WisataFinder telah dikembangkan lebih lanjut menggunakan dataset nasional yang berisi 1.025 destinasi wisata dari 37 provinsi.
+WisataFinder dikembangkan melalui dua tahap utama:
 
-Dataset nasional yang telah diproses disimpan pada `data/processed/destinations_nasional.csv`. Dataset awal sebanyak 437 destinasi tetap dipertahankan sebagai bagian dari riwayat pengembangan dan pembanding. Kedua dataset tidak digabungkan.
+| Versi | Dataset | File Aplikasi | Branch |
+|---|---:|---|---|
+| Versi awal | 437 destinasi | `app.py` | `main` |
+| Versi nasional | 1.025 destinasi dari 37 provinsi | `app_nasional_v7.py` | `fitur-dataset-indonesia` |
+
+Kedua versi menggunakan pendekatan Sistem Temu Kembali Informasi (STKI) dengan TF-IDF dan Cosine Similarity. Dataset awal tetap dipertahankan untuk menunjukkan riwayat pengembangan dan sebagai pembanding. Kedua dataset tidak digabungkan.
+
+### Pengembangan Dataset Nasional
+
+Pengembangan versi nasional menggunakan dataset Indonesia Tourism yang diperoleh dari [Kaggle](https://www.kaggle.com/datasets/sagitasantia/indonesia-tourism).
+
+Dataset nasional terdiri dari 1.025 destinasi dengan label wilayah dari 37 provinsi setelah proses pengolahan.
+
+**Catatan ketersediaan dataset:** File mentah dan hasil pengolahan dataset nasional belum disertakan dalam repository publik karena ketentuan redistribusinya masih perlu dikonfirmasi. Petunjuk memperoleh dan menyiapkan dataset tersedia pada [`data/README.md`](data/README.md).
 
 ### Pengembangan Algoritma
 
-Eksperimen algoritma dilakukan melalui versi V2 sampai V7 untuk meningkatkan pencarian berdasarkan kategori, nama destinasi, kota, dan provinsi.
+Eksperimen dilakukan melalui versi algoritma V2 sampai V7. Pengembangan mencakup peningkatan pencarian berdasarkan kategori, nama destinasi, kota, dan provinsi.
 
-Evaluasi V7 pada delapan query menghasilkan rata-rata Precision@10 sebesar 70%. Sebanyak 56 dari 56 hasil yang ditemukan dinilai relevan pada sampel pengujian manual.
+Hasil evaluasi V7:
 
-Pengujian penyaringan metadata juga dilakukan terhadap 37 provinsi, dengan 289 dari 289 hasil sesuai metadata provinsi yang diminta. Hasil ini bukan klaim akurasi geografis menyeluruh.
+- Rata-rata Precision@10 sebesar 70% pada delapan query pengujian.
+- Sebanyak 56 dari 56 hasil yang ditemukan dinilai relevan berdasarkan penilaian manual pada sampel pengujian.
+- Pengujian penyaringan metadata terhadap 37 provinsi menghasilkan 289 dari 289 hasil yang sesuai dengan metadata provinsi yang diminta.
+
+Hasil tersebut merupakan evaluasi pada skenario pengujian yang digunakan, bukan klaim bahwa seluruh hasil pencarian atau seluruh lokasi destinasi sudah akurat.
+
+### Pengujian Fungsional Aplikasi
+
+Aplikasi nasional telah melalui sembilan skenario pengujian fungsional manual, meliputi:
+
+- Pencarian museum di Semarang dan Bandung.
+- Pencarian pantai di Bali.
+- Validasi lokasi yang tidak dikenal, seperti Atlantis.
+- Pengujian kombinasi filter provinsi, kota/kabupaten, dan kategori.
+- Pengujian filter provinsi saja dan kota/kabupaten saja.
+- Pengujian ketidaksesuaian antara provinsi dan kota.
+
+Seluruh skenario tersebut memberikan hasil sesuai dengan perilaku yang diharapkan.
 
 ### Dokumentasi Penelitian
 
-Penjelasan lengkap mengenai dataset, metodologi, evaluasi, dan perkembangan proyek tersedia pada:
+Dokumentasi proyek tersedia pada:
 
 - [Dokumentasi Dataset](docs/DATASET.md)
 - [Metodologi Algoritma](docs/METODOLOGI.md)
 - [Hasil Evaluasi](docs/EVALUASI.md)
 - [Riwayat Pengembangan](docs/PENGEMBANGAN.md)
 
-**Status pengembangan:** Aplikasi nasional sedang melalui validasi fungsional dan integrasi algoritma V7. WisataBot masih menjadi rencana pengembangan berikutnya.
+### Status Pengembangan
 
----
+Versi nasional tersedia pada branch [`fitur-dataset-indonesia`](https://github.com/siskamuthoharoh/WisataFinder/tree/fitur-dataset-indonesia). Versi awal tetap dipertahankan pada branch `main`.
 
----
-
+Pengembangan berikutnya difokuskan pada peningkatan pengalaman pencarian, pengujian otomatis, dokumentasi produk, dan pengembangan WisataBot.
 ## Daftar Isi
 
 1. [Latar Belakang](#1-latar-belakang)
@@ -211,49 +240,61 @@ Diagram ini menggambarkan hubungan utama antara data, query, pemeringkatan, dan 
 
 ## 7. Struktur Repositori
 
-Struktur utama proyek WisataFinder:
+Struktur repository WisataFinder pada branch `fitur-dataset-indonesia`:
 
 ```text
 WisataFinder/
-├── app.py
-├── app_nasional_v7.py
+├── .gitignore
 ├── README.md
 ├── requirements.txt
-├── .gitignore
-├── .streamlit/
+├── app.py
+├── app_nasional_v7.py
+│
 ├── data/
+│   ├── README.md
 │   ├── raw/
+│   │   └── tourism_with_id.csv
 │   └── processed/
-├── src/
-│   ├── inspect_columns.py
-│   ├── preprocess_data.py
-│   └── validate_data.py
+│       ├── destinations_clean.csv
+│       ├── evaluasi_precision_v7.csv
+│       ├── evaluasi_provinsi_v7.csv
+│       ├── perbandingan_akhir_v2_v7.csv
+│       └── ringkasan_audit_final.csv
+│
+├── docs/
+│   ├── DATASET.md
+│   ├── METODOLOGI.md
+│   ├── EVALUASI.md
+│   └── PENGEMBANGAN.md
+│
 ├── notebooks/
+│   ├── 01_eksplorasi_data.ipynb
+│   ├── 02_eksperimen_stki.ipynb
+│   └── pengembangan_dan_evaluasi_algoritma_nasional.ipynb
+│
 ├── reports/
 │   ├── evaluasi_query_expansion.csv
-│   ├── validasi_dataset.txt
-│   └── figures/
-└── docs/
-    ├── DATASET.md
-    ├── METODOLOGI.md
-    ├── EVALUASI.md
-    └── PENGEMBANGAN.md
+│   └── validasi_dataset.txt
+│
+└── src/
+    ├── inspect_columns.py
+    ├── preprocess_data.py
+    └── validate_data.py
 ```
 
-Keterangan:
+### Keterangan Struktur
 
-| Bagian | Fungsi |
+| Folder/File | Fungsi |
 |---|---|
-| app.py | Aplikasi pencarian versi awal |
-| app_nasional_v7.py | Aplikasi pengembangan dataset nasional |
-| data/raw/ | Dataset sumber |
-| data/processed/ | Dataset hasil pengolahan dan evaluasi |
-| src/ | Script pemeriksaan dan preprocessing |
-| notebooks/ | Eksperimen dan analisis algoritma |
-| reports/ | Laporan dan hasil pengujian |
-| docs/ | Dokumentasi penelitian |
+| `app.py` | Aplikasi pencarian versi awal |
+| `app_nasional_v7.py` | Aplikasi pengembangan dataset nasional |
+| `data/` | Dataset dan laporan hasil pengolahan |
+| `notebooks/` | Eksplorasi data dan eksperimen algoritma |
+| `src/` | Script pemeriksaan, preprocessing, dan validasi data |
+| `docs/` | Dokumentasi penelitian dan pengembangan |
+| `reports/` | Laporan hasil penelitian |
 
-Folder tests/ saat ini belum memiliki file pengujian otomatis.
+**Catatan:** Dataset nasional sebanyak 1.025 destinasi belum disertakan dalam repository publik. Lihat `data/README.md` untuk informasi sumber dan petunjuk penyediaan dataset.
 
 ## 8. Instalasi dan Menjalankan Aplikasi
 
@@ -295,16 +336,22 @@ Aplikasi awal menggunakan destinations_clean.csv.
 
 ### 8.5. Menjalankan aplikasi nasional
 
+Aplikasi nasional menggunakan dataset `data/processed/destinations_nasional.csv`.
+
+**Persiapan dataset:**
+
+1. Baca petunjuk pada `data/README.md`.
+2. Dapatkan dataset dari sumber yang tercantum dalam dokumentasi.
+3. Lakukan pengolahan data sesuai prosedur yang tersedia.
+4. Pastikan file `destinations_nasional.csv` tersedia pada folder `data/processed/`.
+
+**Menjalankan aplikasi:**
+
 ```bash
 streamlit run app_nasional_v7.py
 ```
 
-Aplikasi nasional menggunakan destinations_nasional.csv.
-
-**Catatan:** Aplikasi nasional masih dalam tahap validasi.
-Pastikan dataset dan dependensi tersedia sebelum menjalankan aplikasi.
-
-## 9. Contoh Penggunaan
+**Catatan:** Dataset nasional tidak disertakan dalam repository publik karena ketentuan redistribusinya masih perlu dikonfirmasi. Aplikasi nasional telah melalui sembilan skenario pengujian fungsional manual. Hasil evaluasi algoritma tersedia pada folder `data/processed/` dan dokumentasi `docs/EVALUASI.md`.## 9. Contoh Penggunaan
 
 Berikut contoh query untuk mencoba perilaku pencarian.
 
