@@ -1,0 +1,19 @@
+Pemeriksaan,Hasil
+Jumlah data,1025
+Jumlah kolom awal,11
+Nama wisata duplikat,0
+Alamat kosong,0
+Latitude kosong,0
+Longitude kosong,0
+Koordinat di luar rentang,0
+Koordinat unik,861
+Data dengan koordinat berulang,164
+Kota kosong,18
+Deskripsi kosong,27
+Deskripsi tidak informatif,177
+Deskripsi informatif,821
+URL gambar kosong,0
+URL gambar duplikat,36
+URL gambar berformat HTTP/HTTPS,1025
+Provinsi dikoreksi berdasarkan alamat,89
+Provinsi perlu verifikasi nama dan lokasi,1

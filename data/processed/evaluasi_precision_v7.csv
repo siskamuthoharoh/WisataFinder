@@ -1,0 +1,9 @@
+﻿Query,Jumlah_Hasil,Jumlah_Relevan,Jumlah_Tidak_Relevan,Precision@10,Precision_Hasil_Ditemukan
+Gunung dan wisata alam,10,10,0,1.0,1.0
+Kebun binatang di Jakarta,1,1,0,0.1,1.0
+Museum,10,10,0,1.0,1.0
+Museum di Bandung,4,4,0,0.4,1.0
+Museum di Semarang,1,1,0,0.1,1.0
+Pantai di Bali,10,10,0,1.0,1.0
+Tempat wisata di Bali,10,10,0,1.0,1.0
+Wisata budaya di Jawa Tengah,10,10,0,1.0,1.0
