@@ -70,16 +70,17 @@ Pengembangan berikutnya difokuskan pada peningkatan pengalaman pencarian, penguj
 1. [Latar Belakang](#1-latar-belakang)
 2. [Tujuan Proyek](#2-tujuan-proyek)
 3. [Fitur Aplikasi](#3-fitur-aplikasi)
-4. [Dataset](#4-dataset)
-5. [Metode dan Alur Sistem](#5-metode-dan-alur-sistem)
-6. [Teknologi yang Digunakan](#6-teknologi-yang-digunakan)
-7. [Struktur Repositori](#7-struktur-repositori)
-8. [Instalasi dan Menjalankan Aplikasi](#8-instalasi-dan-menjalankan-aplikasi)
-9. [Contoh Penggunaan](#9-contoh-penggunaan)
-10. [Pengujian dan Evaluasi](#10-pengujian-dan-evaluasi)
-11. [Keterbatasan Sistem](#11-keterbatasan-sistem)
-12. [Pengembangan Selanjutnya](#12-pengembangan-selanjutnya)
-13. [Pengembang](#13-pengembang)
+4. [Tampilan Aplikasi](#4-tampilan-aplikasi)
+5. [Dataset](#5-dataset)
+6. [Metode dan Alur Sistem](#6-metode-dan-alur-sistem)
+7. [Teknologi yang Digunakan](#7-teknologi-yang-digunakan)
+8. [Struktur Repositori](#8-struktur-repositori)
+9. [Instalasi dan Menjalankan Aplikasi](#9-instalasi-dan-menjalankan-aplikasi)
+10. [Contoh Penggunaan](#10-contoh-penggunaan)
+11. [Pengujian dan Evaluasi](#11-pengujian-dan-evaluasi)
+12. [Keterbatasan Sistem](#12-keterbatasan-sistem)
+13. [Pengembangan Selanjutnya](#13-pengembangan-selanjutnya)
+14. [Pengembang](#14-pengembang)
 
 ---
 
@@ -103,6 +104,7 @@ Proyek ini memiliki tujuan sebagai berikut:
 - Menyediakan filter lokasi dan kategori untuk membantu mempersempit hasil pencarian.
 - Menguji hasil pencarian menggunakan beberapa query dan penilaian relevansi.
 - Mendokumentasikan proses pengembangan agar proyek dapat dipahami dan dijalankan kembali.
+
 
 ## 3. Fitur Aplikasi
 
@@ -130,7 +132,26 @@ Pengurutan harga merupakan penyesuaian berdasarkan kebutuhan query, bukan pengga
 
 Hasil pencarian ditampilkan melalui antarmuka Streamlit agar pengguna dapat mencoba sistem tanpa harus menjalankan perhitungan secara manual.
 
-## 4. Dataset
+## 4. Tampilan Aplikasi
+
+### 4.1. Halaman Utama
+
+![Halaman utama WisataFinder](reports/figures/01_halaman_utama.png)
+
+### 4.2. Pencarian Berdasarkan Kata Kunci
+
+![Pencarian menggunakan kata kunci](reports/figures/02_pencarian_kata_kunci.png)
+
+### 4.3. Pencarian Menggunakan Filter Tanpa Kata Kunci
+
+![Pencarian menggunakan filter](reports/figures/03_pencarian_filter_saja.png)
+
+### 4.4. Kombinasi Filter
+
+![Kombinasi provinsi, kota, dan kategori](reports/figures/04_kombinasi_filter.png)
+
+
+## 5. Dataset
 
 WisataFinder menggunakan dataset destinasi wisata Indonesia yang tersedia dalam berkas berikut.
 
@@ -157,17 +178,17 @@ Jumlah data awal tidak selalu sama dengan jumlah data akhir apabila preprocessin
 
 Sumber asli dataset, atribusi pembuat, dan ketentuan lisensinya perlu dicatat berdasarkan halaman sumber dataset yang sebenarnya. Jangan menganggap dataset bebas digunakan kembali sebelum ketentuan lisensinya diverifikasi.
 
-## 5. Metode dan Alur Sistem
+## 6. Metode dan Alur Sistem
 
 WisataFinder menggunakan pendekatan temu kembali informasi berbasis teks dengan TF-IDF dan Cosine Similarity.
 
-### 5.1. Validasi dan preprocessing data
+### 6.1. Validasi dan preprocessing data
 
 Dataset diperiksa dan disiapkan sebelum digunakan dalam pencarian. Tahap ini mencakup pemeriksaan struktur kolom, penanganan kolom yang tidak diperlukan, pemeriksaan data, serta penyusunan teks yang digunakan sebagai representasi pencarian.
 
 Tujuan preprocessing adalah menyiapkan informasi destinasi dalam format yang konsisten dan dapat diproses oleh sistem. Rincian operasi preprocessing mengikuti implementasi pada `src/preprocess_data.py`.
 
-### 5.2. Pembobotan TF-IDF
+### 6.2. Pembobotan TF-IDF
 
 TF-IDF mengubah teks menjadi representasi numerik berdasarkan pentingnya kata dalam suatu dokumen dibandingkan dengan kumpulan dokumen.
 
@@ -179,7 +200,7 @@ Secara konseptual:
 
 Kata yang muncul pada banyak dokumen dapat memiliki daya pembeda yang lebih kecil dibandingkan kata yang lebih spesifik. Dengan demikian, dokumen destinasi dapat direpresentasikan sebagai vektor numerik.
 
-### 5.3. Cosine Similarity
+### 6.3. Cosine Similarity
 
 Setelah query dan dokumen destinasi direpresentasikan dalam ruang fitur yang sama, sistem menghitung kemiripan vektor menggunakan Cosine Similarity.
 
@@ -194,7 +215,7 @@ Keterangan:
 
 Nilai ini membandingkan arah kedua vektor. Dalam representasi TF-IDF yang umum digunakan, skor yang lebih tinggi menunjukkan kemiripan pola kata yang lebih besar.
 
-### 5.4. Pemeringkatan hasil
+### 6.4. Pemeringkatan hasil
 
 Alur pencarian secara umum adalah:
 
@@ -208,7 +229,7 @@ Alur pencarian secara umum adalah:
 
 Urutan tersebut menjelaskan alur konseptual sistem. Detail implementasi dan kondisi khusus mengikuti kode aktual aplikasi.
 
-### 5.5. Diagram alur sistem
+### 6.5. Diagram alur sistem
 
 ```mermaid
 flowchart TD
@@ -225,7 +246,7 @@ flowchart TD
 
 Diagram ini menggambarkan hubungan utama antara data, query, pemeringkatan, dan tampilan hasil.
 
-## 6. Teknologi yang Digunakan
+## 7. Teknologi yang Digunakan
 
 | Teknologi | Peran |
 |---|---|
@@ -238,7 +259,7 @@ Diagram ini menggambarkan hubungan utama antara data, query, pemeringkatan, dan 
 | GitHub | Penyimpanan repositori dan dokumentasi proyek |
 | Anaconda | Pengelolaan environment Python |
 
-## 7. Struktur Repositori
+## 8. Struktur Repositori
 
 Struktur repository WisataFinder pada branch `fitur-dataset-indonesia`:
 
@@ -296,7 +317,7 @@ WisataFinder/
 
 **Catatan:** Dataset nasional sebanyak 1.025 destinasi belum disertakan dalam repository publik. Lihat `data/README.md` untuk informasi sumber dan petunjuk penyediaan dataset.
 
-## 8. Instalasi dan Menjalankan Aplikasi
+## 9. Instalasi dan Menjalankan Aplikasi
 
 ### Persyaratan
 
@@ -306,27 +327,27 @@ WisataFinder/
 - Dependensi dalam requirements.txt.
 - Dataset yang diperlukan aplikasi.
 
-### 8.1. Clone repository
+### 9.1. Clone repository
 
 ```bash
 git clone https://github.com/siskamuthoharoh/WisataFinder.git
 cd WisataFinder
 ```
 
-### 8.2. Membuat environment
+### 9.2. Membuat environment
 
 ```bash
 conda create -n wisatafinder python=3.10 -y
 conda activate wisatafinder
 ```
 
-### 8.3. Menginstal dependensi
+### 9.3. Menginstal dependensi
 
 ```bash
 python -m pip install -r requirements.txt
 ```
 
-### 8.4. Menjalankan aplikasi awal
+### 9.4. Menjalankan aplikasi awal
 
 ```bash
 streamlit run app.py
@@ -334,7 +355,7 @@ streamlit run app.py
 
 Aplikasi awal menggunakan destinations_clean.csv.
 
-### 8.5. Menjalankan aplikasi nasional
+### 9.5. Menjalankan aplikasi nasional
 
 Aplikasi nasional menggunakan dataset `data/processed/destinations_nasional.csv`.
 
@@ -351,7 +372,7 @@ Aplikasi nasional menggunakan dataset `data/processed/destinations_nasional.csv`
 streamlit run app_nasional_v7.py
 ```
 
-**Catatan:** Dataset nasional tidak disertakan dalam repository publik karena ketentuan redistribusinya masih perlu dikonfirmasi. Aplikasi nasional telah melalui sembilan skenario pengujian fungsional manual. Hasil evaluasi algoritma tersedia pada folder `data/processed/` dan dokumentasi `docs/EVALUASI.md`.## 9. Contoh Penggunaan
+**Catatan:** Dataset nasional tidak disertakan dalam repository publik karena ketentuan redistribusinya masih perlu dikonfirmasi. Aplikasi nasional telah melalui sembilan skenario pengujian fungsional manual. Hasil evaluasi algoritma tersedia pada folder `data/processed/` dan dokumentasi `docs/EVALUASI.md`.## 10. Contoh Penggunaan
 
 Berikut contoh query untuk mencoba perilaku pencarian.
 
@@ -364,11 +385,26 @@ Berikut contoh query untuk mencoba perilaku pencarian.
 
 Contoh di atas adalah query pengujian, bukan klaim bahwa semua hasilnya pasti relevan. Kualitas hasil perlu diperiksa melalui keluaran aplikasi dan penilaian relevansi.
 
-## 10. Pengujian dan Evaluasi
+## 10. Contoh Penggunaan
+
+Berikut contoh query untuk mencoba perilaku pencarian pada aplikasi WisataFinder.
+
+| Query | Tujuan Pengujian |
+|---|---|
+| `wisata alam di Semarang` | Memeriksa pencarian berdasarkan topik dan lokasi. |
+| `wisata murah di Semarang` | Memeriksa pencarian dengan prioritas harga. |
+| `pantai untuk liburan` | Memeriksa pencarian berdasarkan jenis destinasi. |
+| `tempat wisata keluarga` | Memeriksa pencarian berdasarkan kebutuhan pengunjung. |
+
+Selain menggunakan kata kunci, pengguna juga dapat melakukan pencarian dengan memilih filter provinsi, kota/kabupaten, dan kategori tanpa harus memasukkan kata kunci.
+
+Contoh query di atas merupakan skenario pengujian. Relevansi hasil pencarian tetap perlu diperiksa melalui keluaran aplikasi dan penilaian relevansi.
+
+## 11. Pengujian dan Evaluasi
 
 Pengujian dilakukan untuk memeriksa apakah aplikasi berjalan dengan baik dan apakah hasil pencarian sesuai dengan kebutuhan query.
 
-### 10.1. Pengujian fungsional
+### 11.1. Pengujian fungsional
 
 Pemeriksaan fungsional dapat mencakup:
 
@@ -379,7 +415,7 @@ Pemeriksaan fungsional dapat mencakup:
 - Pengurutan harga berjalan pada query yang memprioritaskan harga.
 - Data lokasi yang belum terverifikasi ditangani sesuai aturan aplikasi.
 
-### 10.2. Evaluasi relevansi
+### 11.2. Evaluasi relevansi
 
 Selain fungsi aplikasi, kualitas pemeringkatan perlu diperiksa menggunakan query uji dan label relevansi. Penilaian relevansi sebaiknya dilakukan berdasarkan kriteria yang konsisten untuk setiap query.
 
@@ -400,11 +436,11 @@ Recall@5 = Jumlah hasil relevan pada top-5 / Jumlah seluruh dokumen relevan
 
 Metrik tersebut perlu dihitung dari data penilaian yang benar-benar diperiksa. Berkas kandidat atau audit saja tidak membuktikan bahwa kualitas sistem sudah baik.
 
-### 10.3. Status pengujian
+### 11.3. Status pengujian
 
 Status implementasi dan evaluasi harus diperbarui berdasarkan hasil pengujian terakhir. Jangan mencantumkan nilai metrik, jumlah tes yang lulus, atau klaim keberhasilan yang belum diperiksa.
 
-## 11. Keterbatasan Sistem
+## 12. Keterbatasan Sistem
 
 Beberapa keterbatasan yang perlu diperhatikan:
 
@@ -417,7 +453,7 @@ Beberapa keterbatasan yang perlu diperhatikan:
 
 Keterbatasan tersebut menjadi pertimbangan saat menafsirkan hasil pencarian dan merencanakan perbaikan sistem.
 
-## 12. Pengembangan Selanjutnya
+## 13. Pengembangan Selanjutnya
 
 Pengembangan selanjutnya dapat difokuskan pada:
 
@@ -430,7 +466,7 @@ Pengembangan selanjutnya dapat difokuskan pada:
 
 Prioritas pengembangan ditentukan berdasarkan hasil pengujian aktual, bukan hanya berdasarkan penambahan fitur.
 
-## 13. Pengembang
+## 14. Pengembang
 
 Proyek akademik mata kuliah **Sistem Temu Kembali Informasi (STKI)**.
 
