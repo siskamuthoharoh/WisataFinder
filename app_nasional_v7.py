@@ -1185,8 +1185,16 @@ def filter_worship_results(results, query):
 # RESULTS
 # =====================================================
 if submitted:
-    if not query.strip():
-        st.warning("Masukkan kata kunci terlebih dahulu.")
+    has_filter = (
+        selected_province != "Semua provinsi"
+        or selected_city != "Semua kota"
+        or selected_category != "Semua kategori"
+    )
+
+    if not query.strip() and not has_filter:
+        st.warning(
+            "Masukkan kata kunci atau pilih minimal satu filter."
+        )
     else:
 
         query_lower = query.casefold()
@@ -1450,12 +1458,15 @@ if submitted:
                 )
                 st.stop()
 # Hitung TF-IDF dan cosine similarity
-        query_vector = vectorizer.transform([search_query])
-
-        scores = cosine_similarity(
-            query_vector,
-            tfidf_matrix
-        ).flatten()
+        if search_query.strip():
+            query_vector = vectorizer.transform([search_query])
+            scores = cosine_similarity(
+                query_vector,
+                tfidf_matrix
+            ).flatten()
+        else:
+            # Pencarian tanpa kata kunci menggunakan filter saja.
+            scores = [0.0] * len(df)
 
         results = df.copy()
         results["similarity_score"] = scores
@@ -1501,7 +1512,11 @@ if submitted:
             ]
 
         # Beri informasi jika ada data yang belum terverifikasi.
-        if location_filter_active and "Location_Verification" in df.columns:
+        if (
+            location_filter_active
+            and search_query.strip()
+            and "Location_Verification" in df.columns
+        ):
             unverified_matches = df[
                 df["Place_Name"]
                 .fillna("")
@@ -1524,10 +1539,12 @@ if submitted:
                     "karena informasi lokasinya belum terverifikasi."
                 )
 
-        # Hanya tampilkan hasil dengan skor kemiripan > 0
-        results = results[
-            results["similarity_score"] > 0
-        ].copy()
+        # Jika memakai kata kunci, buang hasil tanpa kemiripan.
+        # Jika hanya memakai filter, pertahankan semua hasil.
+        if query.strip():
+            results = results[
+                results["similarity_score"] > 0
+            ].copy()
 
 
 
@@ -1678,9 +1695,14 @@ if submitted:
                 "Coba kata kunci lain atau ubah filter kota dan kategori."
             )
         else:
-            st.success(
-                f"Ditemukan {len(results)} destinasi yang relevan."
-            )
+            if query.strip():
+                st.success(
+                    f"Ditemukan {len(results)} destinasi yang relevan."
+                )
+            else:
+                st.success(
+                    f"Ditemukan {len(results)} destinasi berdasarkan filter."
+                )
 
             top_results = results.head(20)
 
