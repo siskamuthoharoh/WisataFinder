@@ -1899,6 +1899,1214 @@ else:
         )
 
 
+
+# =====================================================
+# WISATABOT SECTION
+# =====================================================
+
+def wisatabot_contains_phrase(text, phrase):
+    """Memeriksa apakah frasa muncul sebagai kata utuh."""
+    pattern = rf"(?<!\w){re.escape(str(phrase))}(?!\w)"
+    return re.search(pattern, str(text), flags=re.IGNORECASE) is not None
+
+
+def get_wisatabot_recommendations(user_message):
+    """Memberikan rekomendasi berdasarkan dataset WisataFinder."""
+
+    message = str(user_message).strip()
+    results = df.copy()
+
+    if not message:
+        return "Silakan tuliskan kebutuhan wisata terlebih dahulu.", []
+
+    # Tentukan kolom lokasi yang tersedia.
+    location_column_bot = (
+        "Location_Label"
+        if "Location_Label" in results.columns
+        else "City"
+    )
+
+    # -------------------------------------------------
+    # 1. DETEKSI PROVINSI
+    # -------------------------------------------------
+    provinces = (
+        results["Province"].dropna().astype(str).str.strip().unique().tolist()
+        if "Province" in results.columns else []
+    )
+
+    province_lookup = {p.casefold(): p for p in provinces}
+
+    province_aliases = {
+        "jateng": "Jawa Tengah",
+        "jabar": "Jawa Barat",
+        "jatim": "Jawa Timur",
+        "jogja": "Daerah Istimewa Yogyakarta",
+        "yogya": "Daerah Istimewa Yogyakarta",
+        "diy": "Daerah Istimewa Yogyakarta",
+        "jakarta": "DKI Jakarta",
+    }
+
+    province_candidates = [(p, p) for p in provinces]
+
+    for alias, target in province_aliases.items():
+        canonical = province_lookup.get(target.casefold())
+        if canonical:
+            province_candidates.append((alias, canonical))
+
+    province_candidates.sort(
+        key=lambda item: len(item[0]),
+        reverse=True,
+    )
+
+    detected_province = None
+
+    for alias, target in province_candidates:
+        if wisatabot_contains_phrase(message, alias):
+            detected_province = target
+            break
+
+    # -------------------------------------------------
+    # 2. DETEKSI KOTA/KABUPATEN
+    # -------------------------------------------------
+    city_values = (
+        results[location_column_bot]
+        .dropna()
+        .astype(str)
+        .str.strip()
+        .unique()
+        .tolist()
+    )
+
+    city_alias_lookup = {}
+
+    prefixes = (
+        "Kota Administrasi ",
+        "Kabupaten ",
+        "Kota ",
+        "Kab. ",
+    )
+
+    for city in city_values:
+        aliases = [city]
+
+        for prefix in prefixes:
+            if city.casefold().startswith(prefix.casefold()):
+                aliases.append(city[len(prefix):].strip())
+
+        for alias in aliases:
+            if alias:
+                city_alias_lookup.setdefault(
+                    alias.casefold(), set()
+                ).add(city)
+
+    # Jika nama kota ambigu, prioritaskan Kota
+    # dibanding Kabupaten, mengikuti mesin pencarian utama.
+    city_candidates = []
+
+    for alias, cities in city_alias_lookup.items():
+        for city in cities:
+            city_lower = city.casefold()
+
+            if city_lower.startswith(
+                ("kota administrasi ", "kota ")
+            ):
+                priority = 0
+            elif city_lower.startswith(
+                ("kabupaten ", "kab. ")
+            ):
+                priority = 2
+            else:
+                priority = 1
+
+            city_candidates.append(
+                (priority, -len(alias), alias, city)
+            )
+
+    # Prioritaskan nama wilayah yang paling spesifik.
+    city_candidates.sort(
+        key=lambda item: (
+            item[1],
+            item[0],
+            item[2].casefold(),
+        )
+    )
+
+    detected_city = None
+    detected_city_scope = "exact"
+
+    # Kata Bandung tanpa awalan wilayah mencakup
+    # Kota Bandung, Kabupaten Bandung, dan Bandung Barat.
+    explicit_bandung_terms = (
+        "Kota Bandung",
+        "Kabupaten Bandung",
+        "Bandung Barat",
+    )
+
+    is_bare_bandung = (
+        wisatabot_contains_phrase(message, "Bandung")
+        and not any(
+            wisatabot_contains_phrase(message, term)
+            for term in explicit_bandung_terms
+        )
+    )
+
+    bandung_locations = [
+        city for city in city_values
+        if wisatabot_contains_phrase(city, "Bandung")
+    ]
+
+    if is_bare_bandung and len(set(bandung_locations)) > 1:
+        detected_city = "Bandung"
+        detected_city_scope = "bandung_area"
+
+    else:
+        for _, _, alias, target in city_candidates:
+
+            # Hindari mendeteksi bagian nama provinsi
+            # sebagai nama kota.
+            if (
+                detected_province is not None
+                and wisatabot_contains_phrase(
+                    detected_province, alias
+                )
+            ):
+                continue
+
+            if wisatabot_contains_phrase(message, alias):
+                detected_city = target
+                break
+
+    # -------------------------------------------------
+    # 3. DETEKSI KATEGORI DAN SINONIM
+    # -------------------------------------------------
+
+    # WISATABOT CONCEPT MAP V2
+    # Alias pertanyaan dipetakan ke kategori dataset.
+
+    concept_alias_groups = [
+        {
+            "label": "air terjun",
+            "aliases": ("air terjun", "curug", "waterfall"),
+            "categories": ("air terjun",),
+            "name_terms": ("air terjun", "curug", "waterfall"),
+            "require_name": False,
+        },
+        {
+            "label": "pusat perbelanjaan",
+            "aliases": (
+                "pusat perbelanjaan",
+                "shopping center",
+                "shopping centre",
+                "mall",
+                "mal",
+                "plaza",
+            ),
+            "categories": ("mall",),
+            "name_terms": (),
+            "require_name": False,
+        },
+        {
+            "label": "wisata keluarga",
+            "aliases": (
+                "wisata keluarga",
+                "wahana keluarga",
+                "rekreasi keluarga",
+                "family recreation",
+                "family attractions",
+                "amusement park",
+            ),
+            "categories": ("wahana keluarga", "wisata tematik"),
+            "name_terms": (),
+            "require_name": False,
+        },
+        {
+            "label": "wisata sejarah",
+            "aliases": (
+                "wisata sejarah",
+                "tempat bersejarah",
+                "historical place",
+                "historic site",
+            ),
+            "categories": (
+                "museum",
+                "candi",
+                "monumen",
+                "wisata kerajaan",
+            ),
+            "name_terms": (),
+            "require_name": False,
+        },
+        {
+            "label": "wisata budaya",
+            "aliases": ("wisata budaya", "budaya", "cultural tourism"),
+            "categories": ("candi", "wisata kerajaan", "rumah adat"),
+            "name_terms": (),
+            "require_name": False,
+        },
+        {
+            "label": "wisata alam",
+            "aliases": ("wisata alam", "alam", "nature tourism"),
+            "categories": ("wisata alam",),
+            "name_terms": (),
+            "require_name": False,
+        },
+        {
+            "label": "pantai",
+            "aliases": ("pantai", "beach"),
+            "categories": ("pantai",),
+            "name_terms": (),
+            "require_name": False,
+        },
+        {
+            "label": "gunung",
+            "aliases": ("gunung", "mountain"),
+            "categories": ("gunung",),
+            "name_terms": (),
+            "require_name": False,
+        },
+        {
+            "label": "danau",
+            "aliases": ("danau", "lake"),
+            "categories": ("wisata alam",),
+            "name_terms": ("danau", "lake"),
+            "require_name": True,
+        },
+        {
+            "label": "museum",
+            "aliases": ("museum",),
+            "categories": ("museum",),
+            "name_terms": (),
+            "require_name": False,
+        },
+        {
+            "label": "candi",
+            "aliases": ("candi", "temple"),
+            "categories": ("candi",),
+            "name_terms": (),
+            "require_name": False,
+        },
+        {
+            "label": "wisata kuliner",
+            "aliases": (
+                "wisata kuliner",
+                "tempat makan",
+                "kulineran",
+                "kuliner",
+                "makanan khas",
+                "culinary",
+                "food",
+            ),
+            "categories": ("wisata kuliner",),
+            "name_terms": (),
+            "require_name": False,
+        },
+        {
+            "label": "taman",
+            "aliases": ("taman", "park", "garden"),
+            "categories": ("taman",),
+            "name_terms": ("taman", "park", "garden"),
+            "require_name": False,
+        },
+        {
+            "label": "alun-alun",
+            "aliases": ("alun-alun", "alun alun", "town square"),
+            "categories": ("alun-alun",),
+            "name_terms": (),
+            "require_name": False,
+        },
+        {
+            "label": "wisata religi",
+            "aliases": (
+                "wisata religi",
+                "tempat ibadah",
+                "religious tourism",
+                "religi",
+            ),
+            "categories": ("wisata religi",),
+            "name_terms": (),
+            "require_name": False,
+        },
+        {
+            "label": "bukit",
+            "aliases": ("bukit", "hill"),
+            "categories": ("bukit",),
+            "name_terms": (),
+            "require_name": False,
+        },
+        {
+            "label": "wisata edukasi",
+            "aliases": (
+                "wisata edukasi",
+                "tempat belajar",
+                "educational tourism",
+                "education",
+                "edukasi",
+            ),
+            "categories": ("wisata edukasi",),
+            "name_terms": (),
+            "require_name": False,
+        },
+        {
+            "label": "wisata kerajaan",
+            "aliases": ("wisata kerajaan", "keraton", "istana", "palace"),
+            "categories": ("wisata kerajaan",),
+            "name_terms": (),
+            "require_name": False,
+        },
+        {
+            "label": "wisata tematik",
+            "aliases": (
+                "wisata tematik",
+                "taman tematik",
+                "theme park",
+                "thematic park",
+            ),
+            "categories": ("wisata tematik",),
+            "name_terms": (),
+            "require_name": False,
+        },
+        {
+            "label": "kebun binatang",
+            "aliases": ("kebun binatang", "zoo", "bonbin", "animal park"),
+            "categories": ("kebun binatang",),
+            "name_terms": (),
+            "require_name": False,
+        },
+        {
+            "label": "monumen",
+            "aliases": ("monumen", "monument", "tugu"),
+            "categories": ("monumen",),
+            "name_terms": (),
+            "require_name": False,
+        },
+        {
+            "label": "rumah adat",
+            "aliases": (
+                "rumah adat",
+                "rumah tradisional",
+                "traditional house",
+            ),
+            "categories": ("rumah adat",),
+            "name_terms": (),
+            "require_name": False,
+        },
+        {
+            "label": "lembah",
+            "aliases": ("lembah", "valley"),
+            "categories": ("lembah",),
+            "name_terms": (),
+            "require_name": False,
+        },
+        {
+            "label": "cafe view",
+            "aliases": (
+                "cafe view",
+                "kafe view",
+                "cafe pemandangan",
+                "kafe pemandangan",
+                "view cafe",
+            ),
+            "categories": ("cafe view",),
+            "name_terms": (),
+            "require_name": False,
+        },
+        {
+            "label": "wisata lampion",
+            "aliases": ("wisata lampion", "lampion", "lantern attraction"),
+            "categories": ("wisata lampion",),
+            "name_terms": (),
+            "require_name": False,
+        },
+    ]
+
+    detected_concept = None
+    detected_concept_terms = ()
+    detected_concept_categories = ()
+    detected_name_terms = ()
+    detected_require_name = False
+
+    # Periksa alias terpanjang terlebih dahulu agar frasa
+    # yang lebih spesifik tidak tertukar dengan kata umum.
+    alias_candidates = sorted(
+        [
+            (alias, group)
+            for group in concept_alias_groups
+            for alias in group["aliases"]
+        ],
+        key=lambda item: len(item[0]),
+        reverse=True,
+    )
+
+    for alias, group in alias_candidates:
+        if wisatabot_contains_phrase(message, alias):
+            detected_concept = group["label"]
+            detected_concept_terms = group["aliases"]
+            detected_concept_categories = group["categories"]
+            detected_name_terms = group["name_terms"]
+            detected_require_name = group["require_name"]
+            break
+
+    categories = (
+        results["Category"]
+        .dropna()
+        .astype(str)
+        .str.strip()
+        .unique()
+        .tolist()
+    )
+
+    detected_category = None
+
+    for category in sorted(categories, key=len, reverse=True):
+        if wisatabot_contains_phrase(message, category):
+            detected_category = category
+            break
+
+    # -------------------------------------------------
+    # 4. HITUNG KEMIRIPAN TEKS
+    # -------------------------------------------------
+    # Tambahkan istilah sinonim agar pencarian lebih luas.
+    expanded_message = message
+
+    if detected_concept_terms:
+        expanded_message += " " + " ".join(
+            detected_concept_terms
+        )
+
+    if detected_concept_categories:
+        expanded_message += " " + " ".join(
+            detected_concept_categories
+        )
+
+    if detected_concept:
+        expanded_message += " " + detected_concept
+
+    query_vector = vectorizer.transform([expanded_message])
+
+    scores = cosine_similarity(
+        query_vector,
+        tfidf_matrix,
+    ).flatten()
+
+    results["_bot_score"] = scores
+
+    # -------------------------------------------------
+    # 5. FILTER PROVINSI
+    # -------------------------------------------------
+    if detected_province is not None:
+        results = results[
+            results["Province"]
+            .fillna("")
+            .astype(str)
+            .str.strip()
+            .str.casefold()
+            == detected_province.casefold()
+        ]
+
+    # -------------------------------------------------
+    # 6. FILTER KOTA/KABUPATEN
+    # -------------------------------------------------
+    if detected_city is not None:
+        location_values = (
+            results[location_column_bot]
+            .fillna("")
+            .astype(str)
+            .str.strip()
+        )
+
+        if detected_city_scope == "bandung_area":
+            location_mask = location_values.str.contains(
+                r"(?<!\\w)bandung(?!\\w)",
+                case=False,
+                regex=True,
+                na=False,
+            )
+        else:
+            location_mask = (
+                location_values.str.casefold()
+                == detected_city.casefold()
+            )
+
+        results = results[location_mask]
+
+    # -------------------------------------------------
+    # -------------------------------------------------
+    # 7. FILTER KATEGORI BERDASARKAN INTENT
+    # -------------------------------------------------
+    if detected_concept is not None:
+
+        category_values = (
+            results["Category"]
+            .fillna("")
+            .astype(str)
+            .str.strip()
+            .str.casefold()
+        )
+
+        target_categories = {
+            category.casefold()
+            for category in detected_concept_categories
+        }
+
+        category_mask = category_values.isin(target_categories)
+
+        if detected_name_terms:
+            name_text = (
+                results["Place_Name"]
+                .fillna("")
+                .astype(str)
+            )
+
+            if detected_require_name and "Description" in results.columns:
+                name_text = (
+                    name_text
+                    + " "
+                    + results["Description"].fillna("").astype(str)
+                )
+
+            name_pattern = (
+                r"(?<!\\w)(?:"
+                + "|".join(
+                    re.escape(term)
+                    for term in detected_name_terms
+                )
+                + r")(?!\\w)"
+            )
+
+            name_mask = name_text.str.contains(
+                name_pattern,
+                case=False,
+                regex=True,
+                na=False,
+            )
+
+            if detected_require_name:
+                concept_mask = category_mask & name_mask
+            else:
+                concept_mask = category_mask | name_mask
+
+        else:
+            concept_mask = category_mask
+
+        results = results[concept_mask].copy()
+
+    elif detected_category is not None:
+        results = results[
+            results["Category"]
+            .fillna("")
+            .astype(str)
+            .str.casefold()
+            == detected_category.casefold()
+        ]
+
+    # Hindari menampilkan lokasi yang belum terverifikasi.
+    if (
+        (detected_province is not None or detected_city is not None)
+        and "Location_Verification" in results.columns
+    ):
+        results = results[
+            ~results["Location_Verification"]
+            .fillna("")
+            .astype(str)
+            .str.startswith("Perlu verifikasi")
+        ]
+
+    has_filter = any([
+        detected_province is not None,
+        detected_city is not None,
+        detected_category is not None,
+        detected_concept is not None,
+    ])
+
+    # Untuk kelompok sinonim, hasil ditentukan oleh kecocokan
+    # nama dan kategori agar destinasi dengan label berbeda
+    # tetap dapat ditemukan.
+    if not detected_concept:
+        if results["_bot_score"].gt(0).any():
+            results = results[
+                results["_bot_score"] > 0
+            ]
+        elif not has_filter:
+            return (
+                "Maaf, saya belum menemukan destinasi yang cocok. "
+                "Coba gunakan kata kunci, kategori, atau lokasi lain.",
+                [],
+            )
+
+    if results.empty:
+        return (
+            "Maaf, belum ditemukan destinasi yang sesuai. "
+            "Coba ubah lokasi atau kategori wisata yang kamu inginkan.",
+            [],
+        )
+
+    # -------------------------------------------------
+    # 8. PENGURUTAN REKOMENDASI
+    # -------------------------------------------------
+    cheap_intent = re.search(
+        r"\b(murah|termurah|hemat|terjangkau)\b",
+        message.casefold(),
+    )
+
+    price_warning = None
+
+    if cheap_intent:
+        if "Price" not in results.columns:
+            price_warning = (
+                "Informasi harga belum tersedia dalam dataset. "
+                "Saya belum dapat memastikan destinasi mana yang murah."
+            )
+            results = results.sort_values(
+                by="_bot_score",
+                ascending=False,
+                kind="stable",
+            )
+        else:
+            known_price = (
+                results["Price"].notna()
+                & results["Price"].gt(0)
+            )
+
+            known_count = int(known_price.sum())
+            unknown_count = len(results) - known_count
+
+            if known_count == 0:
+                price_warning = (
+                    "Informasi harga belum tersedia untuk destinasi "
+                    "yang ditemukan. Hasil berikut merupakan pilihan "
+                    "lokasi, bukan kepastian bahwa destinasi tersebut murah."
+                )
+
+                results = results.sort_values(
+                    by="_bot_score",
+                    ascending=False,
+                    kind="stable",
+                )
+
+            else:
+                results["_price_unknown"] = ~known_price
+
+                results = results.sort_values(
+                    by=["_price_unknown", "Price", "_bot_score"],
+                    ascending=[True, True, False],
+                    kind="stable",
+                    na_position="last",
+                )
+
+                if unknown_count > 0:
+                    price_warning = (
+                        f"{known_count} destinasi memiliki data harga dan "
+                        f"{unknown_count} destinasi belum memiliki data harga. "
+                        "Destinasi dengan harga terdata ditampilkan lebih dahulu."
+                    )
+
+    else:
+        results = results.sort_values(
+            by="_bot_score",
+            ascending=False,
+            kind="stable",
+        )
+
+    # Hilangkan duplikasi berdasarkan nama dan lokasi yang sama.
+    dedupe_columns = [
+        column
+        for column in ["Place_Name", location_column_bot, "Province"]
+        if column in results.columns
+    ]
+
+    def normalize_bot_name(value, location, province):
+                   # Menyamakan nama alternatif untuk destinasi yang sama.
+        raw_name = re.sub(
+            r"\s+",
+            " ",
+            str(value).casefold()
+        ).strip()
+
+        known_aliases = {
+            # Dunia Fantasi
+            "dunia fantasi ancol": "dunia fantasi",
+            "dunia fantasi": "dunia fantasi",
+
+            # Kawasan Ancol
+            "ancol dreamland": "taman impian jaya ancol",
+            "taman impian jaya ancol": "taman impian jaya ancol",
+
+            # Sea World Ancol
+            "seaworld ancol": "sea world ancol",
+            "sea world ancol": "sea world ancol",
+
+            # Grand Indonesia
+            "grand indonesia mall": "grand indonesia",
+            "grand indonesia": "grand indonesia",
+
+            # Mal Taman Anggrek
+            "mal taman anggrek": "mal taman anggrek",
+            "taman anggrek mall": "mal taman anggrek",
+
+            # Museum Prasasti
+            "museum prasasti jakarta": "museum prasasti",
+            "museum prasasti": "museum prasasti",
+            "museum taman prasasti": "museum prasasti",
+
+            # Taman Mini Indonesia Indah
+            "taman mini indonesia indah jakarta": "taman mini indonesia indah",
+            "taman mini indonesia indah": "taman mini indonesia indah",
+        }
+
+        if raw_name in known_aliases:
+            return known_aliases[raw_name]
+        tokens = re.findall(
+            r"[a-z0-9]+",
+            str(value).casefold()
+        )
+
+        location_tokens = set(
+            re.findall(
+                r"[a-z0-9]+",
+                str(location).casefold()
+            )
+        )
+
+        province_tokens = set(
+            re.findall(
+                r"[a-z0-9]+",
+                str(province).casefold()
+            )
+        )
+
+        administrative_words = {
+            "kota", "kabupaten", "administrasi"
+        }
+
+        normalized = [
+            token for token in tokens
+            if (
+                token not in location_tokens
+                and token not in province_tokens
+                and token not in administrative_words
+            )
+        ]
+
+        return " ".join(normalized)
+
+    results["_bot_dedupe_key"] = results.apply(
+        lambda row: "|".join([
+            normalize_bot_name(
+                row.get("Place_Name", ""),
+                row.get(location_column_bot, ""),
+                row.get("Province", ""),
+            ),
+            " ".join(
+                str(row.get(location_column_bot, "")).casefold().split()
+            ),
+            " ".join(
+                str(row.get("Province", "")).casefold().split()
+            ),
+        ]),
+        axis=1,
+    )
+
+    results = results.drop_duplicates(
+        subset="_bot_dedupe_key",
+        keep="first",
+    ).drop(columns=["_bot_dedupe_key"])
+
+    # Tampilkan seluruh destinasi yang memenuhi kriteria pencarian.
+    top_results = results.copy()
+
+    # Simpan hanya informasi yang diperlukan untuk chat.
+    recommendations = []
+
+    output_columns = [
+        "Place_Name",
+        location_column_bot,
+        "Province",
+        "Category",
+        "Description",
+        "Price",
+        "Rating",
+    ]
+
+    for _, row in top_results.iterrows():
+        item = {}
+
+        for column in output_columns:
+            if column not in row.index:
+                continue
+
+            value = row[column]
+
+            if pd.isna(value):
+                value = None
+            elif hasattr(value, "item"):
+                value = value.item()
+
+            item[column] = value
+
+        recommendations.append(item)
+
+    # -------------------------------------------------
+    # 9. SUSUN JAWABAN CHATBOT
+    # -------------------------------------------------
+    filter_info = []
+
+    if detected_concept:
+        filter_info.append(f"jenis {detected_concept}")
+    elif detected_category:
+        filter_info.append(f"kategori {detected_category}")
+
+    if detected_city:
+        filter_info.append(f"lokasi {detected_city}")
+
+    if detected_province:
+        filter_info.append(f"provinsi {detected_province}")
+
+    if filter_info:
+        description = " berdasarkan " + ", ".join(filter_info)
+    else:
+        description = " berdasarkan kemiripan pertanyaan"
+
+    reply = (
+        f"Saya menemukan {len(results)} destinasi yang sesuai"
+        f"{description}. Berikut seluruh destinasi yang sesuai untukmu."
+    )
+
+    if cheap_intent and price_warning:
+        reply += "\n\n" + price_warning
+
+    elif cheap_intent and "Price" in results.columns:
+        reply += (
+            "\n\nDestinasi dengan harga yang tercatat "
+            "diurutkan dari harga terendah."
+        )
+
+    return reply, recommendations
+
+
+
+def wisatabot_description_is_relevant(
+    description,
+    place_name,
+    city,
+    province=None,
+):
+    """
+    Memeriksa relevansi deskripsi menggunakan nama unik
+    destinasi, dengan mengecualikan kata lokasi.
+    """
+
+    if description is None or pd.isna(description):
+        return False
+
+    text = " ".join(str(description).casefold().split())
+    name = str(place_name).casefold()
+
+    if len(text) < 30 or not name.strip():
+        return False
+
+    def tokenize(value):
+        return re.findall(
+            r"[a-z0-9]+",
+            str(value).casefold()
+        )
+
+    normalized_text = " ".join(tokenize(text))
+    normalized_name = " ".join(tokenize(name))
+    # Nama lengkap destinasi harus cocok secara utuh.
+    if (
+        normalized_name
+        and len(normalized_name.split()) >= 2
+        and normalized_name in normalized_text
+    ):
+        return True
+
+    generic_words = {
+        "wisata", "tempat", "taman", "museum", "bahari",
+        "pantai", "gunung", "bukit", "danau",
+        "curug", "air", "terjun", "kebun",
+        "binatang", "mall", "mal", "plaza",
+        "pasar", "masjid", "gereja", "vihara",
+        "candi", "monumen", "alun", "kota",
+        "kabupaten", "provinsi", "indonesia",
+        "daerah", "khusus", "ibukota", "administrasi",
+        "jawa", "tengah", "barat", "timur",
+        "utara", "selatan", "of", "in", "and",
+        "the", "adalah", "merupakan", "terletak",
+    }
+
+    location_words = set(
+        tokenize(city)
+        + tokenize(province or "")
+    )
+
+    name_words = [
+        word
+        for word in tokenize(name)
+        if (
+            len(word) >= 3
+            and word not in generic_words
+            and word not in location_words
+        )
+    ]
+
+    if not name_words:
+        return False
+
+    description_words = set(tokenize(normalized_text))
+
+    matched = sum(
+        word in description_words
+        for word in name_words
+    )
+
+    # Nama destinasi harus memiliki cukup kecocokan unik.
+    minimum_match = 1 if len(name_words) == 1 else 2
+
+    return (
+        matched >= minimum_match
+        and matched / len(name_words) >= 0.5
+    )
+
+
+# =====================================================
+# WISATABOT CHAT INTERFACE
+# =====================================================
+
+
+st.markdown("""
+<style>
+/* Judul WisataBot */
+.wisatabot-header {
+    color: #17372C !important;
+    font-size: 2rem !important;
+    font-weight: 800 !important;
+    letter-spacing: -0.8px;
+    margin-top: 12px;
+    margin-bottom: 5px;
+}
+
+.wisatabot-subtitle {
+    color: #456653 !important;
+    font-size: 0.95rem !important;
+    font-weight: 600 !important;
+    margin-bottom: 20px;
+}
+
+/* Kotak percakapan */
+div[data-testid="stExpander"] {
+    background: #FFFFFF !important;
+    border: 1px solid #DCE5DA !important;
+    border-radius: 16px !important;
+}
+
+div[data-testid="stExpander"] summary p {
+    color: #17372C !important;
+    font-weight: 800 !important;
+    font-size: 1rem !important;
+}
+
+/* Tulisan dalam chat */
+div[data-testid="stChatMessage"] {
+    background: #FFFFFF !important;
+    border: 1px solid #E2E9E1 !important;
+    border-radius: 15px !important;
+    padding: 12px !important;
+}
+
+div[data-testid="stChatMessage"] p,
+div[data-testid="stChatMessage"] li,
+div[data-testid="stChatMessage"] strong {
+    color: #17372C !important;
+    font-weight: 600 !important;
+    line-height: 1.7 !important;
+}
+
+/* Label dan kolom pertanyaan */
+div[data-testid="stTextInput"] label p {
+    color: #17372C !important;
+    font-weight: 800 !important;
+}
+
+div[data-testid="stTextInput"] input {
+    color: #17372C !important;
+    background: #FFFFFF !important;
+    border: 1px solid #C9D8CA !important;
+    border-radius: 12px !important;
+    font-weight: 600 !important;
+}
+
+div[data-testid="stTextInput"] input::placeholder {
+    color: #829185 !important;
+    opacity: 1 !important;
+}
+
+/* Tombol kirim */
+div[data-testid="stFormSubmitButton"] button {
+    background: #214E3D !important;
+    color: #FFFFFF !important;
+    border: none !important;
+    border-radius: 12px !important;
+    font-weight: 800 !important;
+    padding: 10px !important;
+}
+
+div[data-testid="stFormSubmitButton"] button:hover {
+    background: #17372C !important;
+    color: #FFFFFF !important;
+}
+
+/* Informasi kecil */
+.wisatabot-note {
+    color: #456653 !important;
+    font-weight: 600 !important;
+}
+/* Teks peringatan berwarna hitam */
+div[data-testid="stAlert"] p,
+div[data-testid="stAlert"] span,
+div[data-testid="stAlert"] strong,
+div[data-testid="stAlert"] li {
+    color: #000000 !important;
+    font-weight: 700 !important;
+}
+</style>
+""", unsafe_allow_html=True)
+
+st.markdown("---")
+
+st.markdown(
+    '<div class="wisatabot-header">🌿 WisataBot</div>',
+    unsafe_allow_html=True,
+)
+
+st.markdown(
+    '<div class="wisatabot-subtitle">'
+    'ASISTEN REKOMENDASI WISATA INDONESIA'
+    '</div>',
+    unsafe_allow_html=True,
+)
+
+with st.expander("💬 Mulai percakapan dengan WisataBot", expanded=False):
+
+    st.write(
+        "Ceritakan destinasi yang kamu cari. "
+        "Contoh: wisata alam di Jawa Tengah yang murah."
+    )
+
+    if "wisatabot_messages" not in st.session_state:
+        st.session_state["wisatabot_messages"] = []
+
+    # Tampilkan riwayat percakapan.
+    for message_item in st.session_state["wisatabot_messages"]:
+
+        with st.chat_message(message_item["role"]):
+            st.write(message_item["content"])
+
+            for number, item in enumerate(
+                message_item.get("recommendations", []),
+                start=1,
+            ):
+                name = item.get("Place_Name") or "Nama tidak tersedia"
+                city = item.get("Location_Label") or item.get("City") or "-"
+                province = item.get("Province") or "-"
+                category = item.get("Category") or "-"
+
+                st.markdown(f"**{number}. {name}**")
+                st.caption(
+                    f"📍 {city}, {province} · 🏷️ {category}"
+                )
+
+                price = item.get("Price")
+                if price is not None:
+                    try:
+                        if float(price) > 0:
+                            st.write(f"Harga: Rp{float(price):,.0f}")
+                    except (ValueError, TypeError):
+                        pass
+
+                rating = item.get("Rating")
+                if rating is not None:
+                    st.write(f"Rating: {rating}")
+
+                description = item.get("Description")
+
+                if wisatabot_description_is_relevant(
+                    description,
+                    name,
+                    city,
+                    item.get("Province"),
+                ):
+                    cleaned_description = " ".join(
+                        str(description).split()
+                    )
+
+                    excerpt = cleaned_description[:250].rstrip()
+
+                    if len(cleaned_description) > 250:
+                        excerpt += "…"
+
+                    st.write(excerpt)
+
+                elif description:
+                    st.caption(
+                        "Deskripsi belum ditampilkan karena "
+                        "relevansinya belum dapat dipastikan."
+                    )
+
+    # Form pertanyaan pengguna.
+    with st.form("wisatabot_chat_form", clear_on_submit=True):
+        user_prompt = st.text_input(
+            "Pertanyaan wisata",
+            placeholder="Contoh: Cari pantai di Bali",
+            key="wisatabot_prompt",
+        )
+
+        bot_submitted = st.form_submit_button(
+            "Kirim ke WisataBot",
+            use_container_width=True,
+        )
+
+    if bot_submitted:
+        if not user_prompt.strip():
+            st.warning("Silakan tuliskan pertanyaan terlebih dahulu.")
+        else:
+            st.session_state["wisatabot_messages"].append({
+                "role": "user",
+                "content": user_prompt.strip(),
+                "recommendations": [],
+            })
+
+            try:
+                reply, recommendations = (
+                    get_wisatabot_recommendations(user_prompt)
+                )
+
+                st.session_state["wisatabot_messages"].append({
+                    "role": "assistant",
+                    "content": reply,
+                    "recommendations": recommendations,
+                })
+
+            except Exception as exc:
+                st.session_state["wisatabot_messages"].append({
+                    "role": "assistant",
+                    "content": (
+                        "Maaf, terjadi kesalahan ketika mencari "
+                        f"rekomendasi: {exc}"
+                    ),
+                    "recommendations": [],
+                })
+
+            st.rerun()
+
+    if st.session_state["wisatabot_messages"]:
+        if st.button(
+            "Hapus percakapan",
+            key="wisatabot_clear",
+        ):
+            st.session_state["wisatabot_messages"] = []
+            st.rerun()
+
+
 # =====================================================
 # FOOTER
 # =====================================================
