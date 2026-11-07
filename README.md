@@ -14,7 +14,7 @@ WisataFinder dikembangkan melalui dua tahap utama:
 | Versi | Dataset | File Aplikasi | Branch |
 |---|---:|---|---|
 | Versi awal | 437 destinasi | `app.py` | `main` |
-| Versi nasional | 1.025 destinasi dari 37 provinsi | `app_nasional_v7.py` | `fitur-dataset-indonesia` |
+| Versi nasional | 1.021 destinasi dari 37 provinsi | `app_nasional_v7.py` | `fitur-dataset-indonesia` |
 
 Kedua versi menggunakan pendekatan Sistem Temu Kembali Informasi (STKI) dengan TF-IDF dan Cosine Similarity. Dataset awal tetap dipertahankan untuk menunjukkan riwayat pengembangan dan sebagai pembanding. Kedua dataset tidak digabungkan.
 
@@ -22,10 +22,9 @@ Kedua versi menggunakan pendekatan Sistem Temu Kembali Informasi (STKI) dengan T
 
 Pengembangan versi nasional menggunakan dataset Indonesia Tourism yang diperoleh dari [Kaggle](https://www.kaggle.com/datasets/sagitasantia/indonesia-tourism).
 
-Dataset nasional terdiri dari 1.025 destinasi dengan label wilayah dari 37 provinsi setelah proses pengolahan.
+Dataset nasional terdiri dari 1.021 destinasi dengan label wilayah dari 37 provinsi setelah proses pengolahan.
 
-**Catatan ketersediaan dataset:** File mentah dan hasil pengolahan dataset nasional belum disertakan dalam repository publik karena ketentuan redistribusinya masih perlu dikonfirmasi. Petunjuk memperoleh dan menyiapkan dataset tersedia pada [`data/README.md`](data/README.md).
-
+**Catatan ketersediaan dataset:** Dataset mentah belum disertakan dalam repository publik karena ketentuan redistribusinya masih perlu dikonfirmasi. Dataset hasil preprocessing sebanyak 1.021 destinasi tersedia pada `data/processed/destinations_nasional.csv`. Petunjuk sumber dan persiapan dataset dapat dilihat pada `data/README.md`.
 ### Pengembangan Algoritma
 
 Eksperimen dilakukan melalui versi algoritma V2 sampai V7. Pengembangan mencakup peningkatan pencarian berdasarkan kategori, nama destinasi, kota, dan provinsi.
@@ -315,7 +314,7 @@ WisataFinder/
 | `docs/` | Dokumentasi penelitian dan pengembangan |
 | `reports/` | Laporan hasil penelitian |
 
-**Catatan:** Dataset nasional sebanyak 1.025 destinasi belum disertakan dalam repository publik. Lihat `data/README.md` untuk informasi sumber dan petunjuk penyediaan dataset.
+**Catatan:** Dataset hasil preprocessing sebanyak 1.021 destinasi tersedia di `data/processed/destinations_nasional.csv`. Dataset mentah belum disertakan karena ketentuan redistribusinya masih perlu dikonfirmasi. Informasi sumber dan petunjuk penyediaan dataset tersedia di `data/README.md`.
 
 ## 9. Instalasi dan Menjalankan Aplikasi
 
@@ -372,7 +371,7 @@ Aplikasi nasional menggunakan dataset `data/processed/destinations_nasional.csv`
 streamlit run app_nasional_v7.py
 ```
 
-**Catatan:** Dataset nasional tidak disertakan dalam repository publik karena ketentuan redistribusinya masih perlu dikonfirmasi. Aplikasi nasional telah melalui sembilan skenario pengujian fungsional manual. Hasil evaluasi algoritma tersedia pada folder `data/processed/` dan dokumentasi `docs/EVALUASI.md`.## 10. Contoh Penggunaan
+**Catatan:** Dataset mentah tidak disertakan dalam repository publik karena ketentuan redistribusinya masih perlu dikonfirmasi. Dataset hasil preprocessing sebanyak 1.021 destinasi tersedia di `data/processed/destinations_nasional.csv`. Aplikasi nasional telah melalui sembilan skenario pengujian fungsional manual. Hasil evaluasi algoritma tersedia pada folder `data/processed/` dan dokumentasi `docs/EVALUASI.md`.
 
 Berikut contoh query untuk mencoba perilaku pencarian.
 
