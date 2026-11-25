@@ -1,5 +1,8 @@
 # WisataFinder — Mesin Pencari Destinasi Wisata
 
+🌐 **Akses Website:** https://wisatafinder.streamlit.app/
+
+Aplikasi pencarian dan rekomendasi wisata Indonesia.
 **Sistem Temu Kembali Informasi (STKI) menggunakan TF-IDF dan Cosine Similarity**
 
 WisataFinder adalah aplikasi pencarian destinasi wisata di Indonesia yang dikembangkan sebagai proyek akademik mata kuliah Sistem Temu Kembali Informasi (STKI). Aplikasi ini membantu pengguna menemukan destinasi wisata berdasarkan kebutuhan pencarian melalui kata kunci, filter lokasi, dan kategori.
